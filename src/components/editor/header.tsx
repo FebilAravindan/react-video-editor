@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { IconShare } from "@tabler/icons-react";
+import { IconShare, IconMusic } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { useStudioStore } from "@/stores/studio-store";
 import { useProjectStore } from "@/stores/project-store";
@@ -40,10 +40,12 @@ import { storageService } from "@/lib/storage/storage-service";
 import { Save } from "lucide-react";
 import AutosizeInput from "../ui/autosize-input";
 import { authClient } from "@/lib/auth-client";
+import { usePanelStore } from "@/stores/panel-store";
 
 export default function Header() {
   const { studio } = useStudioStore();
   const { aspectRatio, setCanvasSize } = useProjectStore();
+  const { isSunoVisible, toggleSuno } = usePanelStore();
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isBatchExporting, setIsBatchExporting] = useState(false);
@@ -569,6 +571,20 @@ export default function Header() {
 
       {/* Right Section */}
       <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "h-8 w-8",
+            isSunoVisible
+              ? "text-violet-400 bg-violet-400/10"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+          onClick={toggleSuno}
+          title="Toggle Suno Music Panel"
+        >
+          <IconMusic className="size-5" />
+        </Button>
         <div className="flex items-center mr-2">
           <Button
             variant="ghost"

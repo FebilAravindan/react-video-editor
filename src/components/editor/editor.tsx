@@ -10,10 +10,20 @@ import { Loading } from "@/components/editor/loading";
 import FloatingControl from "@/components/editor/floating-controls/floating-control";
 import { Compositor } from "openvideo";
 import { WebCodecsUnsupportedModal } from "@/components/editor/webcodecs-unsupported-modal";
+import { SunoPanel } from "@/components/editor/suno-panel";
 
 export default function Editor() {
-  const { toolsPanel, mainContent, timeline, setToolsPanel, setMainContent, setTimeline } =
-    usePanelStore();
+  const {
+    toolsPanel,
+    mainContent,
+    timeline,
+    setToolsPanel,
+    setMainContent,
+    setTimeline,
+    sunoPanel,
+    isSunoVisible,
+    setSunoPanel,
+  } = usePanelStore();
 
   const [isReady, setIsReady] = useState(false);
   const [isWebCodecsSupported, setIsWebCodecsSupported] = useState(true);
@@ -51,7 +61,11 @@ export default function Editor() {
           <ResizableHandle className="bg-border/90" />
 
           {/* Middle Column: Preview + Timeline */}
-          <ResizablePanel defaultSize={100 - toolsPanel} minSize={40} className="min-w-0 min-h-0">
+          <ResizablePanel
+            defaultSize={isSunoVisible ? 100 - toolsPanel - sunoPanel : 100 - toolsPanel}
+            minSize={40}
+            className="min-w-0 min-h-0"
+          >
             <ResizablePanelGroup direction="vertical" className="h-full w-full gap-0">
               {/* Canvas Panel */}
               <ResizablePanel
@@ -82,6 +96,21 @@ export default function Editor() {
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
+
+          {isSunoVisible && (
+            <>
+              <ResizableHandle className="bg-border/90" />
+              <ResizablePanel
+                defaultSize={sunoPanel}
+                minSize={15}
+                maxSize={35}
+                onResize={setSunoPanel}
+                className="min-w-0 bg-card border-l border-border"
+              >
+                <SunoPanel />
+              </ResizablePanel>
+            </>
+          )}
         </ResizablePanelGroup>
       </div>
 
