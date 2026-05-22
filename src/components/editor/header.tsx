@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 import { IconShare } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { useStudioStore } from "@/stores/studio-store";
-import { usePanelStore } from "@/stores/panel-store";
 import { useProjectStore } from "@/stores/project-store";
 import { DEFAULT_CANVAS_PRESETS } from "@/lib/editor-utils";
 import { Log, type IClip } from "openvideo";
@@ -44,7 +43,6 @@ import { authClient } from "@/lib/auth-client";
 
 export default function Header() {
   const { studio } = useStudioStore();
-  const { toggleCopilot, isCopilotVisible } = usePanelStore();
   const { aspectRatio, setCanvasSize } = useProjectStore();
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -84,11 +82,25 @@ export default function Header() {
     return () => clearTimeout(timeoutId);
   }, [title, session, projectId, projectName, setProjectName]);
 
+  const saveCanvasSize = async (width: number, height: number, mode: string) => {
+    setCanvasSize({ width, height }, mode);
+    if (projectId) {
+      try {
+        await storageService.updateProject(projectId, {
+          canvasSize: { width, height },
+          canvasMode: mode,
+        } as any);
+      } catch {
+        toast.error("Failed to save canvas size");
+      }
+    }
+  };
+
   const handleApplyCustomSize = () => {
     const w = parseInt(customWidth);
     const h = parseInt(customHeight);
     if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
-      setCanvasSize({ width: w, height: h }, "Custom");
+      saveCanvasSize(w, h, "Custom");
     } else {
       toast.error("Invalid dimensions");
     }
@@ -446,12 +458,7 @@ export default function Header() {
                     return (
                       <DropdownMenuItem
                         key={preset.label}
-                        onClick={() =>
-                          setCanvasSize(
-                            { width: preset.width, height: preset.height },
-                            preset.label,
-                          )
-                        }
+                        onClick={() => saveCanvasSize(preset.width, preset.height, preset.label)}
                         className="text-xs justify-between cursor-pointer px-2 py-1.5"
                       >
                         <div className="flex items-center gap-2">
@@ -564,17 +571,6 @@ export default function Header() {
             onClick={() => setIsShortcutsModalOpen(true)}
           >
             <Keyboard className="size-5" />
-          </Button>
-
-          <Button
-            size={"sm"}
-            variant="outline"
-            onClick={toggleCopilot}
-            className="h-7"
-            title="Toggle Chat Copilot"
-          >
-            <Icons.ai className="size-5" />
-            <span className="hidden md:block">AI Chat</span>
           </Button>
         </div>
         <Link href="https://discord.gg/SCfMrQx8kr" target="_blank">
