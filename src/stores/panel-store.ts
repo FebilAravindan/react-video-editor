@@ -9,6 +9,8 @@ interface PanelState {
   mainContent: number;
   timeline: number;
   isCopilotVisible: boolean;
+  sunoPanel: number;
+  isSunoVisible: boolean;
 
   setToolsPanel: (size: number) => void;
   setCopilotPanel: (size: number) => void;
@@ -17,6 +19,8 @@ interface PanelState {
   setMainContent: (size: number) => void;
   setTimeline: (size: number) => void;
   toggleCopilot: () => void;
+  setSunoPanel: (size: number) => void;
+  toggleSuno: () => void;
 }
 
 export const usePanelStore = create<PanelState>()(
@@ -29,6 +33,8 @@ export const usePanelStore = create<PanelState>()(
       mainContent: 70,
       timeline: 30,
       isCopilotVisible: true,
+      sunoPanel: 20,
+      isSunoVisible: false,
 
       setToolsPanel: (size) => set({ toolsPanel: size }),
       setPreviewPanel: (size) => set({ previewPanel: size }),
@@ -37,14 +43,18 @@ export const usePanelStore = create<PanelState>()(
       setTimeline: (size) => set({ timeline: size }),
       setCopilotPanel: (size) => set({ copilotPanel: size }),
       toggleCopilot: () => set((state) => ({ isCopilotVisible: !state.isCopilotVisible })),
+      setSunoPanel: (size) => set({ sunoPanel: size }),
+      toggleSuno: () => set((state) => ({ isSunoVisible: !state.isSunoVisible })),
     }),
     {
       name: "panel-sizes",
-      version: 2,
+      version: 3,
       migrate: (state: any) => ({
         ...state,
-        mainContent: 70,
-        timeline: 30,
+        mainContent: state.mainContent ?? 70,
+        timeline: state.timeline ?? 30,
+        sunoPanel: 20,
+        isSunoVisible: false,
       }),
     },
   ),
