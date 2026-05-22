@@ -10,7 +10,6 @@ import { Image, Video, Audio, Placeholder, Log } from "openvideo";
 import { Loader2, Package, Play, Upload, Music, Trash2 } from "lucide-react";
 import { storageService } from "@/lib/storage/storage-service";
 import type { MediaFile, MediaType } from "@/types/media";
-import { uploadFile } from "@/lib/upload-utils";
 
 const STUDIO_BASE = "http://localhost:3000";
 const UPLOADS_STORAGE_KEY = "designcombo_uploads";
@@ -195,11 +194,12 @@ export default function PanelProjectAssets() {
       const recovered: UploadedAsset[] = opfsFiles.map((file) => {
         const blobUrl = file.url || URL.createObjectURL(file.file);
         const old = oldEntries.find((e) => e.id === file.id || e.name === file.name);
-        const isR2 = old?.src && !old.src.startsWith("blob:");
+        // Prefer any non-blob URL (studio static or R2) — these survive page reloads
+        const persistentUrl = old?.src && !old.src.startsWith("blob:") ? old.src : null;
         return {
           id: file.id,
           name: file.name,
-          src: isR2 ? old!.src : blobUrl,
+          src: persistentUrl ?? blobUrl,
           type: file.type,
           duration: file.duration,
         };
@@ -222,6 +222,23 @@ export default function PanelProjectAssets() {
 
   // ── Upload handler ────────────────────────────────────────────────────
 
+  const uploadToStudio = async (file: File): Promise<string | null> => {
+    if (!projectId) return null;
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(`${STUDIO_BASE}/api/projects/${projectId}/uploads`, {
+        method: "POST",
+        body: form,
+      });
+      if (!res.ok) return null;
+      const { url } = await res.json();
+      return url as string;
+    } catch {
+      return null;
+    }
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -234,13 +251,9 @@ export default function PanelProjectAssets() {
         const id = crypto.randomUUID();
         const type = detectFileType(file);
 
-        let src = URL.createObjectURL(file);
-        try {
-          const result = await uploadFile(file);
-          if (result?.url) src = result.url;
-        } catch {
-          // R2 upload failed — use local blob URL
-        }
+        // Try studio static server first (persistent URL), fall back to blob
+        const studioUrl = await uploadToStudio(file);
+        const src = studioUrl ?? URL.createObjectURL(file);
 
         if (storageService.isOPFSSupported()) {
           await storageService.saveMediaFile({
@@ -249,7 +262,7 @@ export default function PanelProjectAssets() {
           });
         }
 
-        newAssets.push({ id, name: file.name, src, type, size: file.size } as UploadedAsset);
+        newAssets.push({ id, name: file.name, src, type } as UploadedAsset);
       }
 
       const updated = [...newAssets, ...uploads];
