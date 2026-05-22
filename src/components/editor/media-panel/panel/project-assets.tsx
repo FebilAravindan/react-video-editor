@@ -31,7 +31,10 @@ export default function PanelProjectAssets() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!projectId) return;
+    if (!projectId) {
+      setIsLoading(false);
+      return;
+    }
 
     const controller = new AbortController();
 
@@ -100,6 +103,7 @@ export default function PanelProjectAssets() {
           videoClip.name = clipName;
           await studio.timeline.replaceClipsBySource(src, async (oldClip) => {
             const clone = await videoClip.clone();
+            clone.id = oldClip.id;
             clone.name = oldClip.name;
             clone.left = oldClip.left;
             clone.top = oldClip.top;
@@ -107,7 +111,7 @@ export default function PanelProjectAssets() {
             clone.height = oldClip.height;
             const realDuration = videoClip.meta.duration;
             const newTrim = { ...oldClip.trim };
-            newTrim.to = Math.min(newTrim.to, realDuration);
+            newTrim.to = Math.max(newTrim.to, realDuration);
             newTrim.from = Math.min(newTrim.from, newTrim.to);
             clone.playbackRate = oldClip.playbackRate;
             clone.display = { ...oldClip.display };
