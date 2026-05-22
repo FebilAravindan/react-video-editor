@@ -33,15 +33,20 @@ export default function PanelProjectAssets() {
   useEffect(() => {
     if (!projectId) return;
 
+    const controller = new AbortController();
+
     const fetchAssets = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${STUDIO_BASE}/api/projects/${projectId}`);
+        const res = await fetch(`${STUDIO_BASE}/api/projects/${projectId}`, {
+          signal: controller.signal,
+        });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setAssets(data.project?.assets ?? []);
       } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
         setError("Could not load project assets.");
         Log.error("PanelProjectAssets fetch failed:", err);
       } finally {
@@ -50,6 +55,8 @@ export default function PanelProjectAssets() {
     };
 
     fetchAssets();
+
+    return () => controller.abort();
   }, [projectId]);
 
   const addImage = async (asset: ProjectAsset) => {
@@ -100,8 +107,9 @@ export default function PanelProjectAssets() {
             clone.height = oldClip.height;
             const realDuration = videoClip.meta.duration;
             const newTrim = { ...oldClip.trim };
-            newTrim.to = Math.max(newTrim.to, realDuration);
+            newTrim.to = Math.min(newTrim.to, realDuration);
             newTrim.from = Math.min(newTrim.from, newTrim.to);
+            clone.playbackRate = oldClip.playbackRate;
             clone.display = { ...oldClip.display };
             clone.trim = newTrim;
             clone.duration = (newTrim.to - newTrim.from) / clone.playbackRate;
@@ -159,14 +167,18 @@ export default function PanelProjectAssets() {
             className="group relative aspect-square rounded-md overflow-hidden bg-secondary/50 cursor-pointer border border-transparent hover:border-primary/50 transition-all"
             onClick={() => handleAdd(asset)}
           >
-            <img
-              src={`${STUDIO_BASE}${asset.localPath}`}
-              alt={asset.name}
-              className="w-full h-full object-cover"
-            />
-            {asset.type === "video" && (
-              <div className="absolute bottom-1 left-1 bg-black/60 rounded p-0.5">
-                <Play size={10} className="text-white fill-white" />
+            {asset.type === "image" ? (
+              <img
+                src={`${STUDIO_BASE}${asset.localPath}`}
+                alt={asset.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-secondary/80">
+                <Play
+                  size={20}
+                  className="text-muted-foreground fill-muted-foreground opacity-60"
+                />
               </div>
             )}
             <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
