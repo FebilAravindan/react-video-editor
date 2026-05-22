@@ -7,8 +7,8 @@ import {
   IconMusic,
   IconMicrophone,
   IconWaveSine,
-  IconArrowsLeftRight,
   IconSparkles,
+  IconPackage,
   type IconProps,
   IconPhoto,
   IconVideo,
@@ -16,6 +16,7 @@ import {
 import { create } from "zustand";
 
 export type Tab =
+  | "project"
   | "uploads"
   | "images"
   | "videos"
@@ -31,6 +32,10 @@ export type Tab =
 export const tabs: {
   [key in Tab]: { icon: React.FC<IconProps> | React.FC<any>; label: string };
 } = {
+  project: {
+    icon: IconPackage,
+    label: "Project",
+  },
   uploads: {
     icon: IconFolder,
     label: "Uploads",
@@ -88,7 +93,7 @@ interface MediaPanelStore {
 }
 
 export const useMediaPanelStore = create<MediaPanelStore>((set) => ({
-  activeTab: "uploads",
+  activeTab: "project",
   setActiveTab: (tab) => set({ activeTab: tab, showProperties: false }),
   highlightMediaId: null,
   requestRevealMedia: (mediaId) =>
