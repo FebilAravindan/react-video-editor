@@ -14,12 +14,14 @@ import PanelMusic from "./panel/music";
 import PanelVoiceovers from "./panel/voiceovers";
 import PanelSFX from "./panel/sfx";
 import PanelElements from "./panel/elements";
+import PanelProjectAssets from "./panel/project-assets";
 import { PropertiesPanel } from "../properties-panel";
 import type { IClip } from "openvideo";
 import { useEffect, useState } from "react";
 import { useStudioStore } from "@/stores/studio-store";
 
 const viewMap: Record<Tab, React.ReactNode> = {
+  project: <PanelProjectAssets />,
   uploads: <PanelUploads />,
   images: <PanelImages />,
   videos: <PanelVideos />,
