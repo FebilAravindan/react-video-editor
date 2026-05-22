@@ -452,6 +452,12 @@ export default function Header() {
                       width: 1920,
                       height: 1080,
                     },
+                    {
+                      label: "4K Landscape",
+                      icon: Monitor,
+                      width: 3840,
+                      height: 2160,
+                    },
                   ].map((preset) => {
                     const isSelected = aspectRatio === preset.label;
                     const Icon = preset.icon;
