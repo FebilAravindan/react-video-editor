@@ -1,68 +1,53 @@
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
+const STUDIO_API = process.env.STUDIO_API_URL || "http://localhost:3000";
+
+function mapToEditorProject(p: any) {
+  const es = p.editorState || {};
+  return {
+    id: p.id,
+    name: p.name,
+    thumbnail: es.thumbnail ?? null,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+    scenes: [],
+    currentSceneId: es.currentSceneId || "",
+    backgroundColor: es.backgroundColor ?? null,
+    backgroundType: es.backgroundType ?? "color",
+    blurIntensity: es.blurIntensity ?? null,
+    bookmarks: es.bookmarks || [],
+    fps: es.fps || 30,
+    canvasSize: es.canvasSize || { width: 1080, height: 1920 },
+    canvasMode: es.canvasMode || "preset",
+    data: es.data ?? null,
+    mediaItems: es.mediaItems || [],
+    userId: "local",
+  };
+}
+
 export async function GET() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
-    const projects = await prisma.project.findMany({
-      where: {
-        userId: session.user.id,
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-    });
-
+    const res = await fetch(`${STUDIO_API}/api/projects`);
+    const data = await res.json();
+    const projects = (data.projects || []).map(mapToEditorProject);
     return NextResponse.json(projects);
-  } catch (error) {
-    console.error("Error fetching projects:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  } catch {
+    return NextResponse.json([]);
   }
 }
 
 export async function POST(req: Request) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
     const body = await req.json();
-    const { id, name, thumbnail, canvasSize, canvasMode, fps, data } = body;
-
-    if (!id || !name) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
-
-    const project = await prisma.project.create({
-      data: {
-        id,
-        name,
-        thumbnail,
-        canvasSize,
-        canvasMode,
-        fps: fps || 30,
-        data,
-        userId: session.user.id,
-        updatedAt: new Date(),
-      },
+    const res = await fetch(`${STUDIO_API}/api/projects`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: body.name || "Untitled video" }),
     });
-
-    return NextResponse.json(project);
-  } catch (error) {
-    console.error("Error creating project:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    if (!res.ok) throw new Error("Failed to create project");
+    const data = await res.json();
+    return NextResponse.json(mapToEditorProject(data.project));
+  } catch {
+    return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
   }
 }
