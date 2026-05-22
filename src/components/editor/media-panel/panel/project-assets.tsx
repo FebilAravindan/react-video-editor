@@ -8,6 +8,61 @@ import { useProjectStore } from "@/stores/project-store";
 import { Image, Video, Placeholder, Log } from "openvideo";
 import { Loader2, Package, Play } from "lucide-react";
 
+function VideoThumbnail({ src }: { src: string }) {
+  const [thumbnail, setThumbnail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const video = document.createElement("video");
+    video.crossOrigin = "anonymous";
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+
+    const onSeeked = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth || 160;
+        canvas.height = video.videoHeight || 90;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          setThumbnail(canvas.toDataURL("image/jpeg", 0.7));
+        }
+      } catch {
+        // CORS or tainted canvas — leave thumbnail null (play icon fallback)
+      }
+      video.src = "";
+    };
+
+    const onMeta = () => {
+      video.currentTime = 0.01;
+    };
+
+    video.addEventListener("loadedmetadata", onMeta, { once: true });
+    video.addEventListener("seeked", onSeeked, { once: true });
+    video.src = src;
+
+    return () => {
+      video.removeEventListener("loadedmetadata", onMeta);
+      video.removeEventListener("seeked", onSeeked);
+      video.src = "";
+    };
+  }, [src]);
+
+  return (
+    <>
+      {thumbnail ? (
+        <img src={thumbnail} alt="" className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full bg-secondary/80" />
+      )}
+      <div className="absolute bottom-1 left-1 bg-black/60 rounded p-0.5">
+        <Play size={10} className="text-white fill-white" />
+      </div>
+    </>
+  );
+}
+
 const STUDIO_BASE = "http://localhost:3000";
 
 interface ProjectAsset {
@@ -178,12 +233,7 @@ export default function PanelProjectAssets() {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-secondary/80">
-                <Play
-                  size={20}
-                  className="text-muted-foreground fill-muted-foreground opacity-60"
-                />
-              </div>
+              <VideoThumbnail src={`${STUDIO_BASE}${asset.localPath}`} />
             )}
             <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <p className="text-[10px] text-white truncate font-medium">{asset.name}</p>
