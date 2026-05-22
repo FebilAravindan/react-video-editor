@@ -10,20 +10,10 @@ import { Loading } from "@/components/editor/loading";
 import FloatingControl from "@/components/editor/floating-controls/floating-control";
 import { Compositor } from "openvideo";
 import { WebCodecsUnsupportedModal } from "@/components/editor/webcodecs-unsupported-modal";
-import Assistant from "./assistant/assistant";
 
 export default function Editor() {
-  const {
-    toolsPanel,
-    copilotPanel,
-    mainContent,
-    timeline,
-    setToolsPanel,
-    setCopilotPanel,
-    setMainContent,
-    setTimeline,
-    isCopilotVisible,
-  } = usePanelStore();
+  const { toolsPanel, mainContent, timeline, setToolsPanel, setMainContent, setTimeline } =
+    usePanelStore();
 
   const [isReady, setIsReady] = useState(false);
   const [isWebCodecsSupported, setIsWebCodecsSupported] = useState(true);
@@ -61,11 +51,7 @@ export default function Editor() {
           <ResizableHandle className="bg-border/90" />
 
           {/* Middle Column: Preview + Timeline */}
-          <ResizablePanel
-            defaultSize={isCopilotVisible ? 100 - copilotPanel - toolsPanel : 100 - toolsPanel}
-            minSize={40}
-            className="min-w-0 min-h-0"
-          >
+          <ResizablePanel defaultSize={100 - toolsPanel} minSize={40} className="min-w-0 min-h-0">
             <ResizablePanelGroup direction="vertical" className="h-full w-full gap-0">
               {/* Canvas Panel */}
               <ResizablePanel
@@ -73,7 +59,7 @@ export default function Editor() {
                 minSize={30}
                 maxSize={85}
                 onResize={setMainContent}
-                className="min-h-0"
+                className="min-h-0 overflow-hidden"
               >
                 <CanvasPanel
                   onReady={() => {
@@ -96,22 +82,6 @@ export default function Editor() {
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
-          {isCopilotVisible && (
-            <>
-              <ResizableHandle className="bg-border/90" />
-              {/* Right Column: Chat Copilot */}
-              <ResizablePanel
-                defaultSize={copilotPanel}
-                minSize={15}
-                maxSize={40}
-                onResize={setCopilotPanel}
-                className="max-w-7xl relative overflow-visible! bg-card min-w-0"
-              >
-                {/* Chat copilot */}
-                <Assistant />
-              </ResizablePanel>
-            </>
-          )}
         </ResizablePanelGroup>
       </div>
 

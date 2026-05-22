@@ -40,6 +40,12 @@ export const usePanelStore = create<PanelState>()(
     }),
     {
       name: "panel-sizes",
+      version: 2,
+      migrate: (state: any) => ({
+        ...state,
+        mainContent: 70,
+        timeline: 30,
+      }),
     },
   ),
 );
