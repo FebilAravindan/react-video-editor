@@ -8,6 +8,7 @@ import {
   IconPlus,
   IconLoader2,
   IconAlertCircle,
+  IconDownload,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,7 @@ interface GeneratedTracksProps {
   tracks: AudioInfo[];
   polling: boolean;
   onAddToTimeline: (track: AudioInfo) => void;
+  savedPaths: Record<string, string>;
 }
 
 function formatDuration(seconds?: string): string {
@@ -41,11 +43,13 @@ function TrackItem({
   playingId,
   setPlayingId,
   onAdd,
+  localPath,
 }: {
   track: AudioInfo;
   playingId: string | null;
   setPlayingId: (id: string | null) => void;
   onAdd: (track: AudioInfo) => void;
+  localPath?: string;
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isPlaying = playingId === track.id;
@@ -115,6 +119,16 @@ function TrackItem({
               <IconPlayerPlay className="size-3.5" />
             )}
           </Button>
+          {localPath && (
+            <a
+              href={localPath}
+              download={track.title || "track.mp3"}
+              className="inline-flex items-center justify-center h-7 w-7 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+              title="Download"
+            >
+              <IconDownload className="size-3.5" />
+            </a>
+          )}
           <Button
             size="icon"
             variant="ghost"
@@ -133,7 +147,12 @@ function TrackItem({
   );
 }
 
-export function GeneratedTracks({ tracks, polling, onAddToTimeline }: GeneratedTracksProps) {
+export function GeneratedTracks({
+  tracks,
+  polling,
+  onAddToTimeline,
+  savedPaths,
+}: GeneratedTracksProps) {
   const [playingId, setPlayingId] = useState<string | null>(null);
 
   if (!polling && tracks.length === 0) return null;
@@ -162,6 +181,7 @@ export function GeneratedTracks({ tracks, polling, onAddToTimeline }: GeneratedT
           playingId={playingId}
           setPlayingId={setPlayingId}
           onAdd={onAddToTimeline}
+          localPath={savedPaths[track.id]}
         />
       ))}
     </div>
