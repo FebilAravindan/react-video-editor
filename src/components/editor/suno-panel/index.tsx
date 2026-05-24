@@ -85,6 +85,7 @@ export function SunoPanel() {
         try {
           const existing = JSON.parse(localStorage.getItem("devcraft_generated_assets") || "[]");
           localStorage.setItem("devcraft_generated_assets", JSON.stringify([...existing, meta]));
+          window.dispatchEvent(new Event("devcraft:assets-updated"));
         } catch {
           // localStorage full or unavailable — skip silently
         }
@@ -203,9 +204,11 @@ export function SunoPanel() {
   };
 
   const handleAddToTimeline = async (track: AudioInfo) => {
-    if (!studio || !track.audio_url) return;
+    if (!studio) return;
+    const src = savedPaths[track.id] ?? track.audio_url;
+    if (!src) return;
     try {
-      const clip = await Audio.fromUrl(track.audio_url);
+      const clip = await Audio.fromUrl(src);
       clip.name = track.title || "Suno track";
       await studio.addClip(clip);
       toast.success(`"${clip.name}" added to timeline`);

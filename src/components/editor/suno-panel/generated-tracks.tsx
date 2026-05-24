@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   IconPlayerPlay,
@@ -53,6 +53,13 @@ function TrackItem({
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isPlaying = playingId === track.id;
+
+  useEffect(() => {
+    if (!isPlaying) {
+      audioRef.current?.pause();
+    }
+  }, [isPlaying]);
+
   const hasError = track.status === "error";
 
   const togglePlay = () => {

@@ -78,18 +78,24 @@ export default function PanelMusic() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = localStorage.getItem("devcraft_generated_assets");
-      if (!raw) return;
-      const all: SavedAudioAsset[] = JSON.parse(raw);
-      const audio = all
-        .filter((a) => a.type === "audio")
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setGeneratedAudio(audio);
-    } catch {
-      // malformed localStorage — ignore
-    }
+    const loadGeneratedAudio = () => {
+      if (typeof window === "undefined") return;
+      try {
+        const raw = localStorage.getItem("devcraft_generated_assets");
+        if (!raw) return;
+        const all: SavedAudioAsset[] = JSON.parse(raw);
+        const audio = all
+          .filter((a) => a.type === "audio")
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setGeneratedAudio(audio);
+      } catch {
+        // malformed localStorage — ignore
+      }
+    };
+
+    loadGeneratedAudio();
+    window.addEventListener("devcraft:assets-updated", loadGeneratedAudio);
+    return () => window.removeEventListener("devcraft:assets-updated", loadGeneratedAudio);
   }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
