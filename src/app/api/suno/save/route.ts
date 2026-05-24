@@ -14,6 +14,11 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(body),
     });
     const data = await upstream.json();
+    // Make localPath an absolute URL so the editor (port 3001) can reach
+    // files that are served by the studio (port 3000).
+    if (upstream.ok && data.localPath) {
+      data.localPath = `${studioUrl}${data.localPath}`;
+    }
     return NextResponse.json(data, { status: upstream.status });
   } catch {
     return NextResponse.json({ error: "Studio service unavailable" }, { status: 503 });
