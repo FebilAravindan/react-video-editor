@@ -176,6 +176,7 @@ export function SunoPanel() {
         make_instrumental: form.isInstrumental,
         model: form.model,
         wait_audio: false,
+        task: form.isInstrumental ? null : "vox",
       };
 
       const res = await fetch("/api/suno/generate", {

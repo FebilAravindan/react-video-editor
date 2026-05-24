@@ -27,8 +27,10 @@ export interface SunoFormState {
 }
 
 const MODELS = [
-  { id: "chirp-v3-5", label: "v4.5-all (Free)" },
+  { id: "chirp-fenix", label: "Fenix (Latest)" },
+  { id: "chirp-custom:bd26f180-8c42-4740-85ad-be90bef51706", label: "Custom" },
   { id: "chirp-v4", label: "v4" },
+  { id: "chirp-v3-5", label: "v4.5-all (Free)" },
 ];
 
 const STYLE_SUGGESTIONS = [
