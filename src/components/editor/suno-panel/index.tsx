@@ -32,6 +32,79 @@ export function SunoPanel() {
   const pollCountRef = useRef(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [savedPaths, setSavedPaths] = useState<Record<string, string>>({});
+  const formRef = useRef<SunoFormState>(form);
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
+
+  const saveCompletedTracks = useCallback(async (completedTracks: AudioInfo[]) => {
+    const currentForm = formRef.current;
+    const keywords = currentForm.styles
+      ? currentForm.styles
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
+    const prompt = currentForm.lyricsMode === "auto" ? "" : currentForm.lyrics;
+
+    const results = await Promise.allSettled(
+      completedTracks.map(async (track) => {
+        if (!track.audio_url) return;
+
+        const res = await fetch("/api/suno/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            audioUrl: track.audio_url,
+            title: track.title,
+            prompt,
+            keywords,
+            duration: track.duration ? parseFloat(track.duration) : undefined,
+          }),
+        });
+
+        if (!res.ok) throw new Error(`Save failed: HTTP ${res.status}`);
+        const { localPath, filename } = await res.json();
+
+        // Write metadata to localStorage
+        const meta = {
+          id: crypto.randomUUID(),
+          filename,
+          localPath,
+          type: "audio" as const,
+          aiGenerated: true as const,
+          clientName: "suno",
+          keywords,
+          prompt,
+          title: track.title,
+          duration: track.duration ? parseFloat(track.duration) : undefined,
+          createdAt: new Date().toISOString(),
+        };
+
+        try {
+          const existing = JSON.parse(localStorage.getItem("devcraft_generated_assets") || "[]");
+          localStorage.setItem("devcraft_generated_assets", JSON.stringify([...existing, meta]));
+        } catch {
+          // localStorage full or unavailable — skip silently
+        }
+
+        return { trackId: track.id, localPath };
+      }),
+    );
+
+    const newPaths: Record<string, string> = {};
+    results.forEach((result) => {
+      if (result.status === "fulfilled" && result.value) {
+        newPaths[result.value.trackId] = result.value.localPath;
+      }
+    });
+
+    if (Object.keys(newPaths).length > 0) {
+      setSavedPaths((prev) => ({ ...prev, ...newPaths }));
+    }
+  }, []);
+
   const stopPolling = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -69,13 +142,21 @@ export function SunoPanel() {
             const ok = data.length - failed;
             if (ok > 0) toast.success(`${ok} track${ok > 1 ? "s" : ""} ready`);
             if (failed > 0) toast.error(`${failed} track${failed > 1 ? "s" : ""} failed`);
+
+            // Save completed tracks to disk + localStorage
+            const completedTracks = data.filter((t) => t.status === "complete" && t.audio_url);
+            if (completedTracks.length > 0) {
+              saveCompletedTracks(completedTracks).catch((err) =>
+                console.error("Failed to save audio tracks:", err),
+              );
+            }
           }
         } catch {
           // network hiccup — keep polling
         }
       }, POLL_INTERVAL_MS);
     },
-    [stopPolling],
+    [stopPolling, saveCompletedTracks],
   );
 
   const handleCreate = async () => {
@@ -153,6 +234,7 @@ export function SunoPanel() {
             tracks={tracks}
             polling={polling}
             onAddToTimeline={handleAddToTimeline}
+            savedPaths={savedPaths}
           />
         </div>
       </ScrollArea>
