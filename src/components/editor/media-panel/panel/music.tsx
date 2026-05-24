@@ -22,12 +22,24 @@ interface Music {
   name: string;
 }
 
+interface SavedAudioAsset {
+  id: string;
+  filename: string;
+  localPath: string;
+  type: string;
+  title?: string;
+  duration?: number;
+  keywords: string[];
+  createdAt: string;
+}
+
 export default function PanelMusic() {
   const { studio } = useStudioStore();
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Music[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [generatedAudio, setGeneratedAudio] = useState<SavedAudioAsset[]>([]);
 
   const fetchMusic = async (query: string) => {
     setIsLoading(true);
@@ -63,6 +75,21 @@ export default function PanelMusic() {
 
   useEffect(() => {
     fetchMusic("");
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem("devcraft_generated_assets");
+      if (!raw) return;
+      const all: SavedAudioAsset[] = JSON.parse(raw);
+      const audio = all
+        .filter((a) => a.type === "audio")
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setGeneratedAudio(audio);
+    } catch {
+      // malformed localStorage — ignore
+    }
   }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,6 +128,34 @@ export default function PanelMusic() {
       </div>
 
       <ScrollArea className="flex-1 px-4">
+        {/* Generated with Suno */}
+        {generatedAudio.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                Generated with Suno
+              </span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <div className="flex flex-col gap-2">
+              {generatedAudio.map((asset) => (
+                <AudioItem
+                  key={asset.id}
+                  item={{
+                    id: asset.id,
+                    url: asset.localPath,
+                    text: asset.title || asset.filename,
+                  }}
+                  onAdd={handleAddAudio}
+                  playingId={playingId}
+                  setPlayingId={setPlayingId}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {isLoading && searchResults.length === 0 ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="animate-spin text-muted-foreground" size={32} />
