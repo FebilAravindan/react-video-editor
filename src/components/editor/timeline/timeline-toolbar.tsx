@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { usePlaybackStore } from "@/stores/playback-store";
 import { useStudioStore } from "@/stores/studio-store";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -14,11 +15,14 @@ import {
   ArrowLeftToLine,
   ArrowRightToLine,
   Scissors,
+  Repeat,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { DEFAULT_FPS } from "@/stores/project-store";
 import { formatTimeCode } from "@/lib/time";
 import { EditableTimecode } from "@/components/ui/editable-timecode";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 
 import {
   IconPlayerPauseFilled,
@@ -33,18 +37,23 @@ export function TimelineToolbar({
   onDelete,
   onDuplicate,
   onSplit,
+  onLoop,
 }: {
   zoomLevel: number;
   setZoomLevel: (zoom: number) => void;
   onDelete?: () => void;
   onDuplicate?: () => void;
   onSplit?: () => void;
+  onLoop?: (count: number) => void;
 }) {
   const { currentTime, duration, isPlaying, toggle, seek } = usePlaybackStore();
   const { selectedClips } = useStudioStore();
 
   const isSelected = selectedClips.length > 0;
   const isLocked = selectedClips.some((clip) => clip.locked);
+
+  const [loopOpen, setLoopOpen] = useState(false);
+  const [loopCount, setLoopCount] = useState("4");
 
   const handleZoomIn = () => {
     setZoomLevel(Math.min(3.5, zoomLevel + 0.15));
@@ -103,6 +112,59 @@ export function TimelineToolbar({
             </TooltipTrigger>
             <TooltipContent>Delete element (Delete)</TooltipContent>
           </Tooltip>
+          <Popover open={loopOpen} onOpenChange={setLoopOpen}>
+            <Tooltip>
+              <PopoverTrigger asChild>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" disabled={!isSelected || isLocked}>
+                    <Repeat className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+              </PopoverTrigger>
+              <TooltipContent>Loop clip</TooltipContent>
+            </Tooltip>
+            <PopoverContent className="w-48 p-3" side="bottom" align="start">
+              <p className="text-xs text-muted-foreground mb-2">Repeat clip how many times?</p>
+              <Input
+                type="number"
+                min={1}
+                max={20}
+                value={loopCount}
+                onChange={(e) => setLoopCount(e.target.value)}
+                className="mb-2 h-8 text-sm"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const n = parseInt(loopCount, 10);
+                    if (n >= 1 && n <= 20) {
+                      onLoop?.(n);
+                      setLoopOpen(false);
+                      setLoopCount("4");
+                    }
+                  }
+                }}
+              />
+              <Button
+                size="sm"
+                className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white"
+                disabled={
+                  !loopCount ||
+                  parseInt(loopCount, 10) < 1 ||
+                  parseInt(loopCount, 10) > 20 ||
+                  isNaN(parseInt(loopCount, 10))
+                }
+                onClick={() => {
+                  const n = parseInt(loopCount, 10);
+                  if (n >= 1 && n <= 20) {
+                    onLoop?.(n);
+                    setLoopOpen(false);
+                    setLoopCount("4");
+                  }
+                }}
+              >
+                Loop
+              </Button>
+            </PopoverContent>
+          </Popover>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon">
