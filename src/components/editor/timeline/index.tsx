@@ -70,6 +70,7 @@ export function Timeline() {
     handleDuplicate,
     handleToggleLock,
     handleDelete,
+    handleLoop,
   } = useClipActions();
 
   const currentTheme = (theme === "system" ? resolvedTheme : theme) as "dark" | "light";
@@ -397,6 +398,7 @@ export function Timeline() {
         onDelete={handleDelete}
         onDuplicate={handleDuplicate}
         onSplit={handleSplit}
+        onLoop={handleLoop}
       />
       <TimelineStudioSync timelineCanvas={canvasInstance} />
 
