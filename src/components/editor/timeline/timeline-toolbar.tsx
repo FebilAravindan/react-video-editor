@@ -54,6 +54,7 @@ export function TimelineToolbar({
 
   const [loopOpen, setLoopOpen] = useState(false);
   const [loopCount, setLoopCount] = useState("4");
+  const parsedCount = parseInt(loopCount, 10);
 
   const handleZoomIn = () => {
     setZoomLevel(Math.min(3.5, zoomLevel + 0.15));
@@ -112,20 +113,32 @@ export function TimelineToolbar({
             </TooltipTrigger>
             <TooltipContent>Delete element (Delete)</TooltipContent>
           </Tooltip>
-          <Popover open={loopOpen} onOpenChange={setLoopOpen}>
+          <Popover
+            open={loopOpen}
+            onOpenChange={(open) => {
+              if (!open) setLoopCount("4");
+              setLoopOpen(open);
+            }}
+          >
             <Tooltip>
               <PopoverTrigger asChild>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" disabled={!isSelected || isLocked}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Loop clip"
+                    disabled={!isSelected || isLocked}
+                  >
                     <Repeat className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
               </PopoverTrigger>
-              <TooltipContent>Loop clip</TooltipContent>
+              <TooltipContent>Loop clip (repeat N times)</TooltipContent>
             </Tooltip>
             <PopoverContent className="w-48 p-3" side="bottom" align="start">
               <p className="text-xs text-muted-foreground mb-2">Repeat clip how many times?</p>
               <Input
+                autoFocus
                 type="number"
                 min={1}
                 max={20}
@@ -134,9 +147,8 @@ export function TimelineToolbar({
                 className="mb-2 h-8 text-sm"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
-                    const n = parseInt(loopCount, 10);
-                    if (n >= 1 && n <= 20) {
-                      onLoop?.(n);
+                    if (parsedCount >= 1 && parsedCount <= 20) {
+                      onLoop?.(parsedCount);
                       setLoopOpen(false);
                       setLoopCount("4");
                     }
@@ -146,16 +158,10 @@ export function TimelineToolbar({
               <Button
                 size="sm"
                 className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white"
-                disabled={
-                  !loopCount ||
-                  parseInt(loopCount, 10) < 1 ||
-                  parseInt(loopCount, 10) > 20 ||
-                  isNaN(parseInt(loopCount, 10))
-                }
+                disabled={!loopCount || parsedCount < 1 || parsedCount > 20 || isNaN(parsedCount)}
                 onClick={() => {
-                  const n = parseInt(loopCount, 10);
-                  if (n >= 1 && n <= 20) {
-                    onLoop?.(n);
+                  if (parsedCount >= 1 && parsedCount <= 20) {
+                    onLoop?.(parsedCount);
                     setLoopOpen(false);
                     setLoopCount("4");
                   }
