@@ -23,6 +23,8 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useStudioStore } from "@/stores/studio-store";
+import { useTimelineStore } from "@/stores/timeline-store";
+import { toast } from "sonner";
 import { clipToJSON, jsonToClip, type ClipJSON } from "openvideo";
 import { generateUUID } from "@/utils/id";
 
@@ -31,6 +33,7 @@ export let clipboardClipJSON: ClipJSON | null = null;
 
 export function useClipActions(clipOverride?: any) {
   const { studio, selectedClips } = useStudioStore();
+  const { tracks, clips } = useTimelineStore();
   const [hasClipboard, setHasClipboard] = React.useState(clipboardClipJSON !== null);
   const [isLocked, setIsLocked] = React.useState(false);
 
@@ -90,6 +93,42 @@ export function useClipActions(clipOverride?: any) {
     await studio.deleteSelected();
   }, [studio]);
 
+  const handleLoop = useCallback(
+    async (count: number) => {
+      if (!studio || !selectedClip || count < 1) return;
+
+      // Find the track that contains the selected clip
+      const track = tracks.find((t) => t.clipIds.includes(selectedClip.id));
+      if (!track) return;
+
+      // Find the rightmost end time (microseconds) of any clip on this track
+      const trackEnd = track.clipIds.reduce((max, id) => {
+        const clip = clips[id];
+        return clip ? Math.max(max, clip.display.to) : max;
+      }, 0);
+
+      // Serialize the original clip once; reuse JSON for every copy
+      const clipJSON = clipToJSON(selectedClip, false);
+      const clipDuration: number = selectedClip.duration; // microseconds
+
+      let cursor = trackEnd;
+
+      for (let i = 0; i < count; i++) {
+        const newClip = await jsonToClip(clipJSON);
+        newClip.id = generateUUID();
+        (newClip as any).display = {
+          from: cursor,
+          to: cursor + clipDuration,
+        };
+        await studio.addClip(newClip);
+        cursor += clipDuration;
+      }
+
+      toast.success(`Looped ${count} ${count === 1 ? "time" : "times"}`);
+    },
+    [studio, selectedClip, tracks, clips],
+  );
+
   return {
     selectedClip,
     isLocked,
@@ -99,6 +138,7 @@ export function useClipActions(clipOverride?: any) {
     handleDuplicate,
     handleToggleLock,
     handleDelete,
+    handleLoop,
   };
 }
 
