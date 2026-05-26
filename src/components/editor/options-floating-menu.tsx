@@ -104,27 +104,29 @@ export function useClipActions(clipOverride?: any) {
       // Find the rightmost end time (microseconds) of any clip on this track
       const trackEnd = track.clipIds.reduce((max, id) => {
         const clip = clips[id];
-        return clip ? Math.max(max, clip.display.to) : max;
+        return clip ? Math.max(max, clip.display.from + clip.duration) : max;
       }, 0);
 
       // Serialize the original clip once; reuse JSON for every copy
       const clipJSON = clipToJSON(selectedClip, false);
       const clipDuration: number = selectedClip.duration; // microseconds
 
-      let cursor = trackEnd;
-
-      for (let i = 0; i < count; i++) {
-        const newClip = await jsonToClip(clipJSON);
-        newClip.id = generateUUID();
-        (newClip as any).display = {
-          from: cursor,
-          to: cursor + clipDuration,
-        };
-        await studio.addClip(newClip);
-        cursor += clipDuration;
+      try {
+        let cursor = trackEnd;
+        for (let i = 0; i < count; i++) {
+          const newClip = await jsonToClip(clipJSON);
+          newClip.id = generateUUID();
+          newClip.display = {
+            from: cursor,
+            to: cursor + clipDuration,
+          };
+          await studio.addClip(newClip, { trackId: track.id });
+          cursor += clipDuration;
+        }
+        toast.success(`Looped ${count} ${count === 1 ? "time" : "times"}`);
+      } catch (err) {
+        toast.error("Failed to loop clip");
       }
-
-      toast.success(`Looped ${count} ${count === 1 ? "time" : "times"}`);
     },
     [studio, selectedClip, tracks, clips],
   );
