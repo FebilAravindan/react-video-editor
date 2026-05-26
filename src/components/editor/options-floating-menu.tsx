@@ -109,7 +109,9 @@ export function useClipActions(clipOverride?: any) {
 
       // Serialize the original clip once; reuse JSON for every copy
       const clipJSON = clipToJSON(selectedClip, false);
-      const clipDuration: number = selectedClip.duration; // microseconds
+      // Use visual span (display.to − display.from) — the track footprint of the clip.
+      // This is semantically correct regardless of how `duration` relates to trim/playback.
+      const clipSpan: number = selectedClip.display.to - selectedClip.display.from;
 
       try {
         let cursor = trackEnd;
@@ -118,10 +120,10 @@ export function useClipActions(clipOverride?: any) {
           newClip.id = generateUUID();
           newClip.display = {
             from: cursor,
-            to: cursor + clipDuration,
+            to: cursor + clipSpan,
           };
           await studio.addClip(newClip, { trackId: track.id });
-          cursor += clipDuration;
+          cursor += clipSpan;
         }
         toast.success(`Looped ${count} ${count === 1 ? "time" : "times"}`);
       } catch (err) {

@@ -133,7 +133,9 @@ export function TimelineToolbar({
                   </Button>
                 </TooltipTrigger>
               </PopoverTrigger>
-              <TooltipContent>Loop clip (repeat {parsedCount} times)</TooltipContent>
+              <TooltipContent>
+                Loop clip (repeat {Number.isNaN(parsedCount) ? "…" : parsedCount} times)
+              </TooltipContent>
             </Tooltip>
             <PopoverContent className="w-48 p-3" side="bottom" align="start">
               <p className="text-xs text-muted-foreground mb-2">Repeat clip how many times?</p>
