@@ -8,8 +8,10 @@ export async function GET(req: Request) {
     headers: await headers(),
   });
 
+  // No session in local dev (DATABASE_URL is a stub — auth DB not configured).
+  // Return empty preset lists so the UI degrades gracefully instead of 401.
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ own: [], published: [] });
   }
 
   const { searchParams } = new URL(req.url);
@@ -45,7 +47,11 @@ export async function POST(req: Request) {
   });
 
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Auth DB not configured in local dev — cannot persist presets without a user.
+    return NextResponse.json(
+      { error: "Authentication required to save presets." },
+      { status: 401 },
+    );
   }
 
   try {
